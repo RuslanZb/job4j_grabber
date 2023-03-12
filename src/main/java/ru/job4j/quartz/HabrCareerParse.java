@@ -5,10 +5,10 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import ru.job4j.quartz.utils.HabrCareerDateTimeParser;
 
 import java.io.IOException;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 
 public class HabrCareerParse {
 
@@ -24,8 +24,7 @@ public class HabrCareerParse {
             Element dateElement = row.select(".vacancy-card__date").first().child(0);
             Element titleElement = row.select(".vacancy-card__title").first();
             Element linkElement = titleElement.child(0);
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            String vacancyDate = ZonedDateTime.parse(dateElement.attr("datetime")).format(formatter);
+            LocalDateTime vacancyDate = new HabrCareerDateTimeParser().parse(dateElement.attr("datetime"));
             String vacancyName = titleElement.text();
             String link = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
             System.out.printf("%s %s%n %s ", vacancyName, link, vacancyDate);
