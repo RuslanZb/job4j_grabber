@@ -58,13 +58,7 @@ public class PsqlStore implements Store {
         try (PreparedStatement ps = cnn.prepareStatement("select * from post")) {
             try (ResultSet resultSet = ps.executeQuery()) {
                 while (resultSet.next()) {
-                    Post post = new Post();
-                    post.setId(resultSet.getInt("id"));
-                    post.setTitle(resultSet.getString("name"));
-                    post.setDescription(resultSet.getString("text"));
-                    post.setLink(resultSet.getString("link"));
-                    post.setLocalDateTime(resultSet.getTimestamp("created").toLocalDateTime());
-                    posts.add(post);
+                    posts.add(buildPost(resultSet));
                 }
             }
         } catch (SQLException e) {
@@ -75,16 +69,12 @@ public class PsqlStore implements Store {
 
     @Override
     public Post findById(int id) {
-        Post post = new Post();
+        Post post = null;
         try (PreparedStatement ps = cnn.prepareStatement("select * from post where id = ?")) {
             ps.setInt(1, id);
             try (ResultSet resultSet = ps.executeQuery()) {
                 while (resultSet.next()) {
-                    post.setId(resultSet.getInt("id"));
-                    post.setTitle(resultSet.getString("name"));
-                    post.setDescription(resultSet.getString("text"));
-                    post.setLink(resultSet.getString("link"));
-                    post.setLocalDateTime(resultSet.getTimestamp("created").toLocalDateTime());
+                    post = buildPost(resultSet);
                 }
             }
         } catch (SQLException e) {
@@ -98,6 +88,16 @@ public class PsqlStore implements Store {
         if (cnn != null) {
             cnn.close();
         }
+    }
+
+    private Post buildPost(ResultSet resultSet) throws SQLException {
+        Post post = new Post();
+        post.setId(resultSet.getInt("id"));
+        post.setTitle(resultSet.getString("name"));
+        post.setDescription(resultSet.getString("text"));
+        post.setLink(resultSet.getString("link"));
+        post.setLocalDateTime(resultSet.getTimestamp("created").toLocalDateTime());
+        return post;
     }
 
     public static void main(String[] args) throws IOException {
