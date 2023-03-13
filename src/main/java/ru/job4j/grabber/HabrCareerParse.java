@@ -24,7 +24,7 @@ public class HabrCareerParse implements Parse {
         this.dateTimeParser = dateTimeParser;
     }
 
-    private static String retrieveDescription(String link){
+    private static String retrieveDescription(String link) {
         Elements rows;
         try {
             Document document = Jsoup.connect(link).get();
