@@ -5,6 +5,9 @@ import org.quartz.impl.StdSchedulerFactory;
 import ru.job4j.grabber.utils.HabrCareerDateTimeParser;
 
 import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Properties;
 
@@ -18,13 +21,16 @@ public class Grabber implements Grab {
     private final Scheduler scheduler;
     private final int time;
     private final String linkPage;
+    private final int port;
 
-    public Grabber(Parse parse, Store store, Scheduler scheduler, int time, String linkPage) {
+    public Grabber(Parse parse, Store store, Scheduler scheduler, int time,
+                   String linkPage, int port) {
         this.parse = parse;
         this.store = store;
         this.scheduler = scheduler;
         this.time = time;
         this.linkPage = linkPage;
+        this.port = port;
     }
 
     @Override
@@ -44,6 +50,28 @@ public class Grabber implements Grab {
                 .withSchedule(times)
                 .build();
         scheduler.scheduleJob(job, trigger);
+    }
+
+    @Override
+    public void web(Store store) {
+        new Thread(() -> {
+            try (ServerSocket server = new ServerSocket(port)) {
+                while (!server.isClosed()) {
+                    Socket socket = server.accept();
+                    try (OutputStream out = socket.getOutputStream()) {
+                        out.write("HTTP/1.1 200 OK\r\n\r\n".getBytes());
+                        for (Post post : store.getAll()) {
+                            out.write(post.toString().getBytes(Charset.forName("Windows-1251")));
+                            out.write(System.lineSeparator().getBytes());
+                        }
+                    } catch (IOException io) {
+                        io.printStackTrace();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     public static class GrabJob implements Job {
@@ -75,6 +103,9 @@ public class Grabber implements Grab {
         var store = new PsqlStore(cfg);
         var time = Integer.parseInt(cfg.getProperty("time"));
         var linkPage = cfg.getProperty("link.page");
-        new Grabber(parse, store, scheduler, time, linkPage).init();
+        var port = Integer.parseInt(cfg.getProperty("port"));
+        Grab grab = new Grabber(parse, store, scheduler, time, linkPage, port);
+        grab.init();
+        grab.web(store);
     }
 }
